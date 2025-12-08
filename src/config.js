@@ -6,6 +6,7 @@ export const COLLISION_RADIUS = 6;
 export const GRID_STEP = 100;
 
 export const MAX_BOTS = 3;
+
 export const BONUS_LIFETIME = 10;
 export const BONUS_SPAWN_INTERVAL = 8;
 

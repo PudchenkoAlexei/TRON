@@ -22,10 +22,34 @@
             display: block;
             background: #050505;
         }
+        #menu {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.85);
+            z-index: 20;
+        }
+        #menu h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        #menu button {
+            padding: 12px 24px;
+            font-size: 22px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div id="ui">
+    <div id="menu">
+        <h1>TRON</h1>
+        <button id="startBtn">Почати гру</button>
+    </div>
+
+    <div id="ui" style="display:none">
         <div>← / A — вліво, → / D — вправо</div>
         <div>R — перезапуск</div>
         <div id="status"></div>

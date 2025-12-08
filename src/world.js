@@ -5,7 +5,8 @@ import {
     COLLISION_RADIUS,
     BONUS_TYPES,
     BONUS_LIFETIME,
-    BONUS_SPAWN_INTERVAL
+    BONUS_SPAWN_INTERVAL,
+    MAX_BOTS
 } from './config.js';
 import { dist2 } from './util.js';
 
@@ -19,6 +20,28 @@ function createBonus(x, y, type) {
         alive: true,
         timeLeft: BONUS_LIFETIME
     };
+}
+
+function spawnPositions(count) {
+    const positions = [];
+    const minDist = 700;
+
+    while (positions.length < count) {
+        const x = (Math.random() - 0.5) * WORLD_SIZE;
+        const y = (Math.random() - 0.5) * WORLD_SIZE;
+        let ok = true;
+
+        for (const p of positions) {
+            const dx = p.x - x;
+            const dy = p.y - y;
+            if (dx * dx + dy * dy < minDist * minDist) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) positions.push({ x, y });
+    }
+    return positions;
 }
 
 export default class World {
@@ -39,13 +62,19 @@ export default class World {
         this.winner = null;
         this._bonusSpawnTimer = BONUS_SPAWN_INTERVAL;
 
-        this.player = new Bike(0, 0, 0, '#00ffff', { isPlayer: true });
+        const positions = spawnPositions(MAX_BOTS + 1);
+
+        const p = positions[0];
+        this.player = new Bike(p.x, p.y, 0, '#00ffff', { isPlayer: true });
         this.player.resetTrail();
         this.bikes.push(this.player);
 
-        const bot = new Bike(200, 0, Math.PI, '#ff00ff', { type: 'aggressive' });
-        bot.resetTrail();
-        this.bikes.push(bot);
+        for (let i = 1; i <= MAX_BOTS; i++) {
+            const pos = positions[i];
+            const bot = new Bike(pos.x, pos.y, Math.random() * Math.PI * 2, '#ff00ff', { type: 'aggressive' });
+            bot.resetTrail();
+            this.bikes.push(bot);
+        }
 
         this.statusMessage = 'Гра йде...';
     }
