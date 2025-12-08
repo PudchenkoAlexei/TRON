@@ -22,25 +22,18 @@ function createBonus(x, y, type) {
     };
 }
 
-function spawnPositions(count) {
+function getSpawnPositions(count) {
+    const radius = WORLD_SIZE / 4;
     const positions = [];
-    const minDist = 700;
+    const step = (Math.PI * 2) / count;
 
-    while (positions.length < count) {
-        const x = (Math.random() - 0.5) * WORLD_SIZE;
-        const y = (Math.random() - 0.5) * WORLD_SIZE;
-        let ok = true;
-
-        for (const p of positions) {
-            const dx = p.x - x;
-            const dy = p.y - y;
-            if (dx * dx + dy * dy < minDist * minDist) {
-                ok = false;
-                break;
-            }
-        }
-        if (ok) positions.push({ x, y });
+    for (let i = 0; i < count; i++) {
+        const ang = i * step;
+        const x = Math.cos(ang) * radius;
+        const y = Math.sin(ang) * radius;
+        positions.push({ x, y });
     }
+
     return positions;
 }
 
@@ -62,16 +55,19 @@ export default class World {
         this.winner = null;
         this._bonusSpawnTimer = BONUS_SPAWN_INTERVAL;
 
-        const positions = spawnPositions(MAX_BOTS + 1);
+        const total = MAX_BOTS + 1;
+        const positions = getSpawnPositions(total);
 
         const p = positions[0];
-        this.player = new Bike(p.x, p.y, 0, '#00ffff', { isPlayer: true });
+        const pAng = Math.atan2(-p.y, -p.x);
+        this.player = new Bike(p.x, p.y, pAng, '#00ffff', { isPlayer: true });
         this.player.resetTrail();
         this.bikes.push(this.player);
 
         for (let i = 1; i <= MAX_BOTS; i++) {
             const pos = positions[i];
-            const bot = new Bike(pos.x, pos.y, Math.random() * Math.PI * 2, '#ff00ff', { type: 'aggressive' });
+            const ang = Math.atan2(-pos.y, -pos.x);
+            const bot = new Bike(pos.x, pos.y, ang, '#ff00ff', { type: 'aggressive' });
             bot.resetTrail();
             this.bikes.push(bot);
         }
