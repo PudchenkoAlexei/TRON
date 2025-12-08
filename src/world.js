@@ -6,11 +6,13 @@ import {
     BONUS_TYPES,
     BONUS_LIFETIME,
     BONUS_SPAWN_INTERVAL,
-    MAX_BOTS
+    MAX_BOTS,
+    BIKE_BODY_RADIUS
 } from './config.js';
 import { dist2 } from './util.js';
 
 const COLLISION_RADIUS2 = COLLISION_RADIUS * COLLISION_RADIUS;
+const BIKE_BODY_RADIUS2 = BIKE_BODY_RADIUS * BIKE_BODY_RADIUS;
 
 function createBonus(x, y, type) {
     return {
@@ -137,6 +139,19 @@ export default class World {
                     }
                 }
                 if (!bike.alive) break;
+            }
+        }
+
+        for (let i = 0; i < this.bikes.length; i++) {
+            const a = this.bikes[i];
+            if (!a.alive) continue;
+            for (let j = i + 1; j < this.bikes.length; j++) {
+                const b = this.bikes[j];
+                if (!b.alive) continue;
+                if (dist2(a, b) < BIKE_BODY_RADIUS2 * 4) {
+                    a.alive = false;
+                    b.alive = false;
+                }
             }
         }
 

@@ -1,7 +1,11 @@
-import { COLLISION_RADIUS } from './config.js';
+import { COLLISION_RADIUS, BIKE_BODY_RADIUS, BIKE_SEPARATION_RADIUS } from './config.js';
 
-function checkCollision(x, y, world, self) {
-    const r2 = (COLLISION_RADIUS * 2.3) ** 2;
+function norm(a) {
+    return (a + Math.PI) % (2 * Math.PI) - Math.PI;
+}
+
+function checkStaticCollision(x, y, world, self) {
+    const trailR2 = (COLLISION_RADIUS * 2.3) ** 2;
     for (const b of world.bikes) {
         const t = b.trail;
         const len = t.length;
@@ -9,26 +13,33 @@ function checkCollision(x, y, world, self) {
             if (b === self && i > len - 10) continue;
             const dx = x - t[i].x;
             const dy = y - t[i].y;
-            if (dx * dx + dy * dy < r2) return true;
+            if (dx * dx + dy * dy < trailR2) return true;
         }
+    }
+    const bodyR2 = (BIKE_BODY_RADIUS * 1.6) ** 2;
+    for (const b of world.bikes) {
+        if (!b.alive || b === self) continue;
+        const dx = x - b.x;
+        const dy = y - b.y;
+        if (dx * dx + dy * dy < bodyR2) return true;
     }
     return false;
 }
 
-function scan(bike, world, ang) {
+function scanDirection(bike, world, ang) {
     let depth = 0;
     const step = 10;
     const maxD = 360;
     for (let d = step; d <= maxD; d += step) {
         const x = bike.x + Math.cos(ang) * d;
         const y = bike.y + Math.sin(ang) * d;
-        if (checkCollision(x, y, world, bike)) break;
+        if (checkStaticCollision(x, y, world, bike)) break;
         depth = d;
     }
     return depth;
 }
 
-function nearestWallDist2(bike, world) {
+function nearestObstacleDist2(bike, world) {
     let best = Infinity;
     for (const b of world.bikes) {
         const t = b.trail;
@@ -41,11 +52,31 @@ function nearestWallDist2(bike, world) {
             if (d2 < best) best = d2;
         }
     }
+    for (const b of world.bikes) {
+        if (!b.alive || b === bike) continue;
+        const dx = bike.x - b.x;
+        const dy = bike.y - b.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < best) best = d2;
+    }
     return best;
 }
 
-function norm(a) {
-    return (a + Math.PI) % (2 * Math.PI) - Math.PI;
+function separationPenalty(bike, world, ang) {
+    let penalty = 0;
+    const sepR2 = BIKE_SEPARATION_RADIUS * BIKE_SEPARATION_RADIUS;
+    for (const other of world.bikes) {
+        if (!other.alive || other === bike) continue;
+        const dx = other.x - bike.x;
+        const dy = other.y - bike.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > sepR2) continue;
+        const dirToOther = Math.atan2(dy, dx);
+        const diff = Math.abs(norm(ang - dirToOther));
+        const w = (sepR2 - d2) / sepR2;
+        penalty += (Math.PI - diff) * w * 40;
+    }
+    return penalty;
 }
 
 export function updateBotAI(bike, world, dt) {
@@ -59,9 +90,9 @@ export function updateBotAI(bike, world, dt) {
     const targetAng = Math.atan2(dy, dx);
     const travelAng = bike.angle;
 
-    const wallD2 = nearestWallDist2(bike, world);
-    const danger = wallD2 < 200 * 200;
-    const panic = wallD2 < 120 * 120;
+    const obsD2 = nearestObstacleDist2(bike, world);
+    const danger = obsD2 < 200 * 200;
+    const panic = obsD2 < 120 * 120;
 
     const scans = 51;
     const halfSector = Math.PI * 1.0;
@@ -70,29 +101,34 @@ export function updateBotAI(bike, world, dt) {
     let bestScore = -999999;
     let bestAng = bike.angle;
 
-    for (const center of [targetAng, travelAng]) {
+    const centers = [targetAng, travelAng];
+
+    for (const center of centers) {
         for (let i = 0; i < scans; i++) {
             const ang = center - halfSector + i * step;
 
-            const depth = scan(bike, world, ang);
+            const depth = scanDirection(bike, world, ang);
             if (depth < 30) continue;
 
             let score = 0;
 
-            const safeWeight = panic ? 5.0 : danger ? 3.2 : 2.0;
+            const safeWeight = panic ? 5.0 : danger ? 3.0 : 2.0;
             score += depth * safeWeight;
 
-            let diffToPlayer = Math.abs(norm(ang - targetAng));
+            const diffToPlayer = Math.abs(norm(ang - targetAng));
             const attackBase =
                 distP2 > 900 * 900 ? 170 :
                 distP2 > 600 * 600 ? 140 :
                 distP2 > 400 * 400 ? 115 : 100;
-
             const attackWeight = panic ? attackBase * 0.3 : danger ? attackBase * 0.55 : attackBase;
             score += (Math.PI - diffToPlayer) * attackWeight;
 
+            const diffTurn = Math.abs(norm(ang - bike.angle));
             const turnPenalty = panic ? 12 : 22;
-            score -= Math.abs(norm(ang - bike.angle)) * turnPenalty;
+            score -= diffTurn * turnPenalty;
+
+            const sepPen = separationPenalty(bike, world, ang);
+            score -= sepPen;
 
             if (score > bestScore) {
                 bestScore = score;

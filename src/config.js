@@ -6,7 +6,6 @@ export const COLLISION_RADIUS = 6;
 export const GRID_STEP = 100;
 
 export const MAX_BOTS = 3;
-
 export const BONUS_LIFETIME = 10;
 export const BONUS_SPAWN_INTERVAL = 8;
 
@@ -17,3 +16,6 @@ export const BONUS_TYPES = {
 };
 
 export const TRAIL_MAX_POINTS = 100;
+
+export const BIKE_BODY_RADIUS = 8;
+export const BIKE_SEPARATION_RADIUS = 120;

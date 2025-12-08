@@ -34,7 +34,12 @@ export function renderWorld(world, ctx, canvas) {
     for (const b of world.bikes) {
         ctx.strokeStyle = b.color;
         ctx.lineWidth = 3;
+
         if (b.trail.length > 0) {
+            ctx.save();
+            ctx.shadowColor = b.color;
+            ctx.shadowBlur = 10;
+
             ctx.beginPath();
             for (let i = 0; i < b.trail.length; i++) {
                 const p = b.trail[i];
@@ -44,6 +49,8 @@ export function renderWorld(world, ctx, canvas) {
                 else ctx.lineTo(sx, sy);
             }
             ctx.stroke();
+
+            ctx.restore();
         }
     }
 
@@ -67,8 +74,24 @@ export function renderWorld(world, ctx, canvas) {
         ctx.translate(sx, sy);
         ctx.rotate(b.angle);
 
+        ctx.shadowColor = b.color;
+        ctx.shadowBlur = 15;
+
         ctx.fillStyle = b.color;
-        ctx.fillRect(-6, -4, 12, 8);
+
+        ctx.beginPath();
+        ctx.roundRect(-16, -7, 32, 14, 7);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(14, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "#ffffffaa";
+        ctx.beginPath();
+        ctx.ellipse(-6, 0, 4, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.restore();
     }
