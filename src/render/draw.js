@@ -1,4 +1,6 @@
 function drawLightcycle(ctx, b, camX, camY) {
+    if (!b.alive) return;
+
     const sx = b.x - camX;
     const sy = b.y - camY;
 
@@ -41,19 +43,6 @@ function drawLightcycle(ctx, b, camX, camY) {
     ctx.fillStyle = b.color;
     ctx.beginPath();
     ctx.roundRect(backX, -BODY_W / 2, BODY_L, BODY_W, 4);
-    ctx.fill();
-
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#ffffffbb";
-    ctx.beginPath();
-    ctx.moveTo(-10, -BODY_W * 0.45);
-    ctx.lineTo(10, -BODY_W * 0.45);
-    ctx.stroke();
-
-    ctx.shadowBlur = 5;
-    ctx.fillStyle = "#ffffffdd";
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 7, 3.6, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -99,8 +88,7 @@ export function drawObstacles(world, ctx, camX, camY) {
             ctx.moveTo(a.x - camX, a.y - camY);
             ctx.lineTo(b.x - camX, b.y - camY);
             ctx.stroke();
-        }
-        else if (ob.type === "poly") {
+        } else if (ob.type === "poly") {
             ctx.beginPath();
             for (let i = 0; i < ob.points.length; i++) {
                 const p = ob.points[i];
@@ -109,21 +97,22 @@ export function drawObstacles(world, ctx, camX, camY) {
             }
             ctx.closePath();
             ctx.stroke();
-        }
-        else if (ob.type === "shape_with_hole") {
+        } else if (ob.type === "shape_with_hole") {
             const out = ob.outer;
             ctx.beginPath();
             ctx.moveTo(out[0].x - camX, out[0].y - camY);
-            for (let i = 1; i < out.length; i++)
+            for (let i = 1; i < out.length; i++) {
                 ctx.lineTo(out[i].x - camX, out[i].y - camY);
+            }
             ctx.closePath();
             ctx.stroke();
 
             const inn = ob.inner;
             ctx.beginPath();
             ctx.moveTo(inn[0].x - camX, inn[0].y - camY);
-            for (let i = 1; i < inn.length; i++)
+            for (let i = 1; i < inn.length; i++) {
                 ctx.lineTo(inn[i].x - camX, inn[i].y - camY);
+            }
             ctx.closePath();
             ctx.stroke();
         }
@@ -152,5 +141,28 @@ export function drawBonuses(world, ctx, camX, camY) {
         ctx.arc(sx, sy, 12, 0, Math.PI * 2);
         ctx.fill();
     }
+    ctx.restore();
+}
+
+export function drawExplosions(world, ctx, camX, camY) {
+    ctx.save();
+
+    for (const ex of world.explosions) {
+        for (const p of ex.particles) {
+            if (p.life <= 0) continue;
+
+            const alpha = p.life;
+            const col = p.color + Math.floor(alpha * 255).toString(16).padStart(2, "0");
+
+            ctx.fillStyle = col;
+            ctx.shadowColor = p.color;
+            ctx.shadowBlur = 20 * alpha;
+
+            ctx.beginPath();
+            ctx.arc(p.x - camX, p.y - camY, 5 * alpha, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
     ctx.restore();
 }

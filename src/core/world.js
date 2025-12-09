@@ -4,6 +4,7 @@ import { MAX_BOTS, WORLD_SIZE } from "./config.js";
 import { randomObstacles } from "../systems/obstacles.js";
 import { checkCollisions } from "../systems/collisions.js";
 import { spawnInitialBonuses, updateBonuses } from "../systems/bonuses.js";
+import Explosion from "../entities/explosion.js";
 
 export default class World {
     constructor() {
@@ -12,6 +13,7 @@ export default class World {
         this.player2 = null;
         this.obstacles = [];
         this.bonuses = [];
+        this.explosions = [];
         this.gameOver = false;
         this.statusMessage = "";
         this.mode = "normal";
@@ -22,6 +24,7 @@ export default class World {
 
         this.bikes = [];
         this.bonuses = [];
+        this.explosions = [];
         this.gameOver = false;
 
         if (mode === "duel") this.spawnTwoPlayers();
@@ -29,7 +32,6 @@ export default class World {
 
         this.obstacles = randomObstacles(this);
         this.addBorderWalls();
-
         spawnInitialBonuses(this);
 
         this.statusMessage = "Гра йде...";
@@ -113,6 +115,17 @@ export default class World {
 
         updateBonuses(this, dt);
         checkCollisions(this);
+
+        // Додаємо вибухи
+        for (const b of this.bikes) {
+            if (!b.alive && !b.exploded) {
+                b.exploded = true;
+                this.explosions.push(new Explosion(b.x, b.y, b.color));
+            }
+        }
+
+        for (const ex of this.explosions) ex.update(dt);
+        this.explosions = this.explosions.filter(e => e.alive);
 
         const alive = this.bikes.filter(b => b.alive);
         

@@ -1,5 +1,5 @@
 import { WORLD_SIZE, GRID_STEP } from "../core/config.js";
-import { drawBike, drawTrail, drawObstacles, drawBonuses } from "./draw.js";
+import { drawBike, drawTrail, drawObstacles, drawBonuses, drawExplosions } from "./draw.js";
 
 export function renderWorld(world, ctx, canvas) {
     const w = canvas.width;
@@ -42,7 +42,10 @@ export function renderWorld(world, ctx, canvas) {
     drawObstacles(world, ctx, camX, camY);
 
     for (const b of world.bikes) drawTrail(ctx, b, camX, camY);
+
     drawBonuses(world, ctx, camX, camY);
+    drawExplosions(world, ctx, camX, camY);
+
     for (const b of world.bikes) drawBike(ctx, b, camX, camY);
 
     ctx.restore();
