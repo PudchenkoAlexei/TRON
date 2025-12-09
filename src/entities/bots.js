@@ -1,4 +1,5 @@
-import { COLLISION_RADIUS, BIKE_BODY_RADIUS, BIKE_SEPARATION_RADIUS } from './config.js';
+import { COLLISION_RADIUS, BIKE_BODY_RADIUS, BIKE_SEPARATION_RADIUS } from "../core/config.js";
+import { pointSegmentDist2 } from "../utils/math.js";
 
 function norm(a) {
     return (a + Math.PI) % (2 * Math.PI) - Math.PI;
@@ -57,6 +58,7 @@ function scanDirection(bike, world, ang) {
 
 function nearestObstacleDist2(bike, world) {
     let best = Infinity;
+
     for (const b of world.bikes) {
         const t = b.trail;
         const len = t.length;
@@ -108,6 +110,7 @@ function separationPenalty(bike, world, ang) {
         const w = (sepR2 - d2) / sepR2;
         penalty += (Math.PI - diff) * w * 40;
     }
+
     return penalty;
 }
 
@@ -138,22 +141,23 @@ export function updateBotAI(bike, world, dt) {
     for (const center of centers) {
         for (let i = 0; i < scans; i++) {
             const ang = center - halfSector + i * step;
-
             const depth = scanDirection(bike, world, ang);
+
             if (depth < 30) continue;
 
             let score = 0;
 
-            const safeWeight = panic ? 5.0 : danger ? 3.0 : 2.0;
-            score += depth * safeWeight;
+            const safeW = panic ? 5.0 : danger ? 3.0 : 2.0;
+            score += depth * safeW;
 
             const diffToPlayer = Math.abs(norm(ang - targetAng));
             const attackBase =
                 distP2 > 900 * 900 ? 170 :
                 distP2 > 600 * 600 ? 140 :
                 distP2 > 400 * 400 ? 115 : 100;
-            const attackWeight = panic ? attackBase * 0.3 : danger ? attackBase * 0.55 : attackBase;
-            score += (Math.PI - diffToPlayer) * attackWeight;
+
+            const attackW = panic ? attackBase * 0.3 : danger ? attackBase * 0.55 : attackBase;
+            score += (Math.PI - diffToPlayer) * attackW;
 
             const diffTurn = Math.abs(norm(ang - bike.angle));
             const turnPenalty = panic ? 12 : 22;
@@ -176,21 +180,10 @@ export function updateBotAI(bike, world, dt) {
     else if (diff < -0.05) bike.angle -= turnSpeed * dt;
 }
 
-function pointSegmentDist2(px, py, a, c) {
-    const vx = c.x - a.x;
-    const vy = c.y - a.y;
-    const ux = px - a.x;
-    const uy = py - a.y;
-    const t = Math.max(0, Math.min(1, (ux*vx + uy*vy)/(vx*vx + vy*vy)));
-    const dx = a.x + vx*t - px;
-    const dy = a.y + vy*t - py;
-    return dx*dx + dy*dy;
-}
-
 function polylineCollision(x, y, pts) {
     for (let i = 0; i < pts.length; i++) {
         const a = pts[i];
-        const c = pts[(i+1) % pts.length];
+        const c = pts[(i + 1) % pts.length];
         if (pointSegmentDist2(x, y, a, c) < 260) return true;
     }
     return false;
@@ -199,7 +192,7 @@ function polylineCollision(x, y, pts) {
 function polyMinDist2(bike, pts) {
     let best = Infinity;
     for (let i = 0; i < pts.length; i++) {
-        const a = pts[i], c = pts[(i+1)%pts.length];
+        const a = pts[i], c = pts[(i + 1) % pts.length];
         best = Math.min(best, pointSegmentDist2(bike.x, bike.y, a, c));
     }
     return best;

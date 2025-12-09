@@ -1,8 +1,7 @@
-import { WORLD_SIZE, GRID_STEP } from './config.js';
-
 function drawLightcycle(ctx, b, camX, camY) {
     const sx = b.x - camX;
     const sy = b.y - camY;
+
     ctx.save();
     ctx.translate(sx, sy);
     ctx.rotate(b.angle);
@@ -60,130 +59,90 @@ function drawLightcycle(ctx, b, camX, camY) {
     ctx.restore();
 }
 
-export function renderWorld(world, ctx, canvas) {
-    const w = canvas.width;
-    const h = canvas.height;
+export function drawBike(ctx, bike, camX, camY) {
+    if (!bike.alive) return;
+    drawLightcycle(ctx, bike, camX, camY);
+}
 
-    ctx.clearRect(0, 0, w, h);
-    if (!world.player) return;
-
-    const camX = world.player.x;
-    const camY = world.player.y;
+export function drawTrail(ctx, b, camX, camY) {
+    if (!b.trail.length) return;
 
     ctx.save();
-    ctx.translate(w / 2, h / 2);
+    ctx.shadowColor = b.color;
+    ctx.shadowBlur = 22;
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 6;
 
-    ctx.fillStyle = '#020205';
-    ctx.fillRect(-w, -h, w * 2, h * 2);
+    const tr = b.trail;
 
-    ctx.strokeStyle = '#0d1a2a';
-    ctx.lineWidth = 1;
-    ctx.shadowColor = '#0a537d';
-    ctx.shadowBlur = 3;
-
-    for (let gx = -WORLD_SIZE / 2; gx <= WORLD_SIZE / 2; gx += GRID_STEP) {
-        ctx.beginPath();
-        ctx.moveTo(gx - camX, -WORLD_SIZE / 2 - camY);
-        ctx.lineTo(gx - camX, WORLD_SIZE / 2 - camY);
-        ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tr[0].x - camX, tr[0].y - camY);
+    for (let i = 1; i < tr.length; i++) {
+        ctx.lineTo(tr[i].x - camX, tr[i].y - camY);
     }
+    ctx.stroke();
 
-    for (let gy = -WORLD_SIZE / 2; gy <= WORLD_SIZE / 2; gy += GRID_STEP) {
-        ctx.beginPath();
-        ctx.moveTo(-WORLD_SIZE / 2 - camX, gy - camY);
-        ctx.lineTo(WORLD_SIZE / 2 - camX, gy - camY);
-        ctx.stroke();
-    }
+    ctx.restore();
+}
 
-    ctx.shadowBlur = 0;
-
+export function drawObstacles(world, ctx, camX, camY) {
+    ctx.strokeStyle = "#66ccff";
     ctx.lineWidth = 5;
     ctx.shadowBlur = 12;
     ctx.shadowColor = "#4499ff";
-    ctx.strokeStyle = "#66ccff";
 
     for (const ob of world.obstacles) {
-        ctx.save();
         if (ob.type === "wall") {
+            const a = ob.points[0];
+            const b = ob.points[1];
             ctx.beginPath();
-            ctx.moveTo(ob.points[0].x - camX, ob.points[0].y - camY);
-            ctx.lineTo(ob.points[1].x - camX, ob.points[1].y - camY);
+            ctx.moveTo(a.x - camX, a.y - camY);
+            ctx.lineTo(b.x - camX, b.y - camY);
             ctx.stroke();
         }
         else if (ob.type === "poly") {
             ctx.beginPath();
             for (let i = 0; i < ob.points.length; i++) {
                 const p = ob.points[i];
-                const nx = p.x - camX;
-                const ny = p.y - camY;
-                if (i === 0) ctx.moveTo(nx, ny);
-                else ctx.lineTo(nx, ny);
+                if (i === 0) ctx.moveTo(p.x - camX, p.y - camY);
+                else ctx.lineTo(p.x - camX, p.y - camY);
             }
             ctx.closePath();
             ctx.stroke();
         }
         else if (ob.type === "shape_with_hole") {
-            ctx.beginPath();
             const out = ob.outer;
+            ctx.beginPath();
             ctx.moveTo(out[0].x - camX, out[0].y - camY);
             for (let i = 1; i < out.length; i++)
                 ctx.lineTo(out[i].x - camX, out[i].y - camY);
             ctx.closePath();
             ctx.stroke();
 
-            ctx.beginPath();
             const inn = ob.inner;
+            ctx.beginPath();
             ctx.moveTo(inn[0].x - camX, inn[0].y - camY);
             for (let i = 1; i < inn.length; i++)
                 ctx.lineTo(inn[i].x - camX, inn[i].y - camY);
             ctx.closePath();
             ctx.stroke();
         }
-        ctx.restore();
     }
+}
 
-    ctx.strokeStyle = null;
-    ctx.shadowBlur = 0;
-
-    for (const b of world.bikes) {
-        ctx.save();
-        ctx.shadowColor = b.color;
-        ctx.shadowBlur = 22;
-        ctx.strokeStyle = b.color;
-        ctx.lineWidth = 6;
-
-        const tr = b.trail;
-        if (tr.length > 0) {
-            ctx.beginPath();
-            ctx.moveTo(tr[0].x - camX, tr[0].y - camY);
-            for (let i = 1; i < tr.length; i++) {
-                ctx.lineTo(tr[i].x - camX, tr[i].y - camY);
-            }
-            ctx.stroke();
-        }
-
-        ctx.restore();
-    }
-
+export function drawBonuses(world, ctx, camX, camY) {
+    ctx.save();
     for (const bonus of world.bonuses) {
         if (!bonus.alive) continue;
         const sx = bonus.x - camX;
         const sy = bonus.y - camY;
 
-        ctx.save();
-        ctx.shadowColor = '#ffff66';
+        ctx.shadowColor = "#ffff66";
         ctx.shadowBlur = 15;
-        ctx.fillStyle = '#fff67f';
+        ctx.fillStyle = "#fff67f";
         ctx.beginPath();
         ctx.arc(sx, sy, 10, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
     }
-
-    for (const b of world.bikes) {
-        if (!b.alive) continue;
-        drawLightcycle(ctx, b, camX, camY);
-    }
-
     ctx.restore();
 }
