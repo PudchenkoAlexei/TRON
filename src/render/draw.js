@@ -88,7 +88,8 @@ export function drawObstacles(world, ctx, camX, camY) {
             ctx.moveTo(a.x - camX, a.y - camY);
             ctx.lineTo(b.x - camX, b.y - camY);
             ctx.stroke();
-        } else if (ob.type === "poly") {
+        } 
+        else if (ob.type === "poly") {
             ctx.beginPath();
             for (let i = 0; i < ob.points.length; i++) {
                 const p = ob.points[i];
@@ -97,22 +98,21 @@ export function drawObstacles(world, ctx, camX, camY) {
             }
             ctx.closePath();
             ctx.stroke();
-        } else if (ob.type === "shape_with_hole") {
+        } 
+        else if (ob.type === "shape_with_hole") {
             const out = ob.outer;
             ctx.beginPath();
             ctx.moveTo(out[0].x - camX, out[0].y - camY);
-            for (let i = 1; i < out.length; i++) {
+            for (let i = 1; i < out.length; i++)
                 ctx.lineTo(out[i].x - camX, out[i].y - camY);
-            }
             ctx.closePath();
             ctx.stroke();
 
             const inn = ob.inner;
             ctx.beginPath();
             ctx.moveTo(inn[0].x - camX, inn[0].y - camY);
-            for (let i = 1; i < inn.length; i++) {
+            for (let i = 1; i < inn.length; i++)
                 ctx.lineTo(inn[i].x - camX, inn[i].y - camY);
-            }
             ctx.closePath();
             ctx.stroke();
         }
@@ -121,26 +121,48 @@ export function drawObstacles(world, ctx, camX, camY) {
 
 export function drawBonuses(world, ctx, camX, camY) {
     ctx.save();
+
     for (const bonus of world.bonuses) {
         if (!bonus.alive) continue;
 
-        const sx = bonus.x - camX;
-        const sy = bonus.y - camY;
+        const x = bonus.x - camX;
+        const y = bonus.y - camY;
 
         if (bonus.type === "speed") {
-            ctx.fillStyle = "#ff9933";
-            ctx.shadowColor = "#ff6600";
-        } else if (bonus.type === "long_trail") {
-            ctx.fillStyle = "#99ff66";
-            ctx.shadowColor = "#55ff22";
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.shadowColor = "#ff9900";
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = "#ffcc55";
+
+            ctx.beginPath();
+            ctx.moveTo(-6, -10);
+            ctx.lineTo(4, -2);
+            ctx.lineTo(-2, -2);
+            ctx.lineTo(6, 10);
+            ctx.lineTo(-4, 2);
+            ctx.lineTo(2, 2);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
         }
 
-        ctx.shadowBlur = 15;
+        else if (bonus.type === "long_trail") {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = "#33ff66";
+            ctx.fillStyle = "#66ff99";
 
-        ctx.beginPath();
-        ctx.arc(sx, sy, 12, 0, Math.PI * 2);
-        ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(-4, -14, 8, 28, 3);
+            ctx.fill();
+
+            ctx.restore();
+        }
     }
+
     ctx.restore();
 }
 
