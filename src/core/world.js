@@ -1,9 +1,9 @@
-// core/world.js
 import Bike from "../entities/bike.js";
 import { updateBotAI } from "../entities/bots.js";
 import { MAX_BOTS, WORLD_SIZE } from "./config.js";
 import { randomObstacles } from "../systems/obstacles.js";
 import { checkCollisions } from "../systems/collisions.js";
+import { spawnInitialBonuses, updateBonuses } from "../systems/bonuses.js";
 
 export default class World {
     constructor() {
@@ -23,8 +23,9 @@ export default class World {
         this.spawnBikes();
 
         this.obstacles = randomObstacles(this);
-
         this.addBorderWalls();
+
+        spawnInitialBonuses(this);
 
         this.statusMessage = "Гра йде...";
     }
@@ -81,6 +82,8 @@ export default class World {
 
         for (const b of this.bikes)
             b.update(dt, b.isPlayer ? input : null);
+
+        updateBonuses(this, dt);
 
         checkCollisions(this);
 

@@ -134,14 +134,22 @@ export function drawBonuses(world, ctx, camX, camY) {
     ctx.save();
     for (const bonus of world.bonuses) {
         if (!bonus.alive) continue;
+
         const sx = bonus.x - camX;
         const sy = bonus.y - camY;
 
-        ctx.shadowColor = "#ffff66";
+        if (bonus.type === "speed") {
+            ctx.fillStyle = "#ff9933";
+            ctx.shadowColor = "#ff6600";
+        } else if (bonus.type === "long_trail") {
+            ctx.fillStyle = "#99ff66";
+            ctx.shadowColor = "#55ff22";
+        }
+
         ctx.shadowBlur = 15;
-        ctx.fillStyle = "#fff67f";
+
         ctx.beginPath();
-        ctx.arc(sx, sy, 10, 0, Math.PI * 2);
+        ctx.arc(sx, sy, 12, 0, Math.PI * 2);
         ctx.fill();
     }
     ctx.restore();

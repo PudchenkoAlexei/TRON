@@ -12,6 +12,11 @@ export default class Bike {
         this.alive = true;
         this.trail = [];
         this._trailDistAcc = 0;
+
+        this.speedMultiplier = 1;
+        this.trailMultiplier = 1;
+        this.bonusActive = null;
+        this.bonusTimer = 0;
     }
 
     resetTrail() {
@@ -27,8 +32,8 @@ export default class Bike {
             if (control.right) this.angle += TURN_SPEED * dt;
         }
 
-        const vx = Math.cos(this.angle) * BIKE_SPEED;
-        const vy = Math.sin(this.angle) * BIKE_SPEED;
+        const vx = Math.cos(this.angle) * (BIKE_SPEED * this.speedMultiplier);
+        const vy = Math.sin(this.angle) * (BIKE_SPEED * this.speedMultiplier);
 
         const px = this.x;
         const py = this.y;
@@ -47,11 +52,11 @@ export default class Bike {
         if (this.trail.length === 0) {
             this.trail.push({ x: this.x, y: this.y });
             this._trailDistAcc = 0;
-        } else if (this._trailDistAcc >= TRAIL_STEP) {
+        } else if (this._trailDistAcc >= TRAIL_STEP / this.trailMultiplier) {
             this.trail.push({ x: this.x, y: this.y });
             this._trailDistAcc = 0;
 
-            if (this.trail.length > TRAIL_MAX_POINTS)
+            if (this.trail.length > TRAIL_MAX_POINTS * this.trailMultiplier)
                 this.trail.shift();
         }
     }

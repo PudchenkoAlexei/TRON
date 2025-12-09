@@ -1,6 +1,8 @@
 export const WORLD_SIZE = 2000;
 export const TRAIL_STEP = 4;
-export const BIKE_SPEED = 200;
+
+export const BIKE_SPEED = 300;
+
 export const TURN_SPEED = Math.PI;
 export const COLLISION_RADIUS = 6;
 export const GRID_STEP = 100;

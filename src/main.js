@@ -7,6 +7,7 @@ const ctx = canvas.getContext("2d");
 const statusEl = document.getElementById("status");
 const menu = document.getElementById("menu");
 const startBtn = document.getElementById("startBtn");
+const duelBtn = document.getElementById("duelBtn");
 const ui = document.getElementById("ui");
 
 let gameStarted = false;
@@ -26,7 +27,14 @@ startBtn.addEventListener("click", () => {
     menu.style.display = "none";
     ui.style.display = "block";
     gameStarted = true;
-    world.init();
+    world.init("normal");
+});
+
+duelBtn.addEventListener("click", () => {
+    menu.style.display = "none";
+    ui.style.display = "block";
+    gameStarted = true;
+    world.init("duel");
 });
 
 let lastTs = performance.now();
@@ -37,7 +45,7 @@ function gameLoop(ts) {
 
     if (gameStarted) {
         const inputState = getInputState();
-        if (consumeRestart()) world.init();
+        if (consumeRestart()) world.init(world.mode);
         world.update(dt, inputState);
         renderWorld(world, ctx, canvas);
         statusEl.textContent = world.statusMessage;
