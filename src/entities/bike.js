@@ -7,16 +7,18 @@ export default class Bike {
         this.y = y;
         this.angle = angle;
         this.color = color;
+
         this.isPlayer = options.isPlayer ?? false;
-        this.type = options.type ?? 'default';
+        this.isPlayer2 = options.isPlayer2 ?? false;
+        this.type = options.type ?? "default";
+
         this.alive = true;
         this.trail = [];
         this._trailDistAcc = 0;
 
         this.speedMultiplier = 1;
         this.trailMultiplier = 1;
-        this.bonusActive = null;
-        this.bonusTimer = 0;
+        this.activeBonuses = options.activeBonuses ?? null;
     }
 
     resetTrail() {
@@ -27,7 +29,7 @@ export default class Bike {
     update(dt, control = null) {
         if (!this.alive) return;
 
-        if (this.isPlayer && control) {
+        if (control) {
             if (control.left) this.angle -= TURN_SPEED * dt;
             if (control.right) this.angle += TURN_SPEED * dt;
         }

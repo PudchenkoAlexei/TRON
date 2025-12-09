@@ -1,19 +1,29 @@
 const inputState = {
     left: false,
     right: false,
-    restartPressed: false
+    restartPressed: false,
+
+    p2_left: false,
+    p2_right: false,
 };
 
 export function initInput() {
-    window.addEventListener('keydown', e => {
-        if (e.code === 'ArrowLeft' || e.code === 'KeyA') inputState.left = true;
-        if (e.code === 'ArrowRight' || e.code === 'KeyD') inputState.right = true;
-        if (e.code === 'KeyR') inputState.restartPressed = true;
+    window.addEventListener("keydown", e => {
+        if (e.code === "ArrowLeft") inputState.left = true;
+        if (e.code === "ArrowRight") inputState.right = true;
+
+        if (e.code === "KeyR") inputState.restartPressed = true;
+
+        if (e.code === "KeyA") inputState.p2_left = true;
+        if (e.code === "KeyD") inputState.p2_right = true;
     });
 
-    window.addEventListener('keyup', e => {
-        if (e.code === 'ArrowLeft' || e.code === 'KeyA') inputState.left = false;
-        if (e.code === 'ArrowRight' || e.code === 'KeyD') inputState.right = false;
+    window.addEventListener("keyup", e => {
+        if (e.code === "ArrowLeft") inputState.left = false;
+        if (e.code === "ArrowRight") inputState.right = false;
+
+        if (e.code === "KeyA") inputState.p2_left = false;
+        if (e.code === "KeyD") inputState.p2_right = false;
     });
 }
 

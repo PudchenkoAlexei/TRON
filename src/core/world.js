@@ -9,18 +9,23 @@ export default class World {
     constructor() {
         this.bikes = [];
         this.player = null;
+        this.player2 = null;
         this.obstacles = [];
         this.bonuses = [];
         this.gameOver = false;
         this.statusMessage = "";
+        this.mode = "normal";
     }
 
-    init() {
+    init(mode = "normal") {
+        this.mode = mode;
+
         this.bikes = [];
         this.bonuses = [];
         this.gameOver = false;
 
-        this.spawnBikes();
+        if (mode === "duel") this.spawnTwoPlayers();
+        else this.spawnBikes();
 
         this.obstacles = randomObstacles(this);
         this.addBorderWalls();
@@ -51,6 +56,18 @@ export default class World {
         });
     }
 
+    spawnTwoPlayers() {
+        const r = WORLD_SIZE / 5;
+
+        this.player = new Bike(-r, 0, 0, "#00ffff", { isPlayer: true });
+        this.player.resetTrail();
+
+        this.player2 = new Bike(r, 0, Math.PI, "#ff00ff", { isPlayer2: true });
+        this.player2.resetTrail();
+
+        this.bikes.push(this.player, this.player2);
+    }
+
     spawnBikes() {
         const total = MAX_BOTS + 1;
         const r = WORLD_SIZE / 4;
@@ -77,22 +94,43 @@ export default class World {
     update(dt, input) {
         if (this.gameOver) return;
 
-        for (const b of this.bikes)
-            if (!b.isPlayer) updateBotAI(b, this, dt);
+        if (this.mode === "normal") {
+            for (const b of this.bikes)
+                if (!b.isPlayer) updateBotAI(b, this, dt);
+        }
 
-        for (const b of this.bikes)
-            b.update(dt, b.isPlayer ? input : null);
+        for (const b of this.bikes) {
+            if (b === this.player) {
+                b.update(dt, { left: input.left, right: input.right });
+            } 
+            else if (b === this.player2) {
+                b.update(dt, { left: input.p2_left, right: input.p2_right });
+            } 
+            else {
+                b.update(dt, null);
+            }
+        }
 
         updateBonuses(this, dt);
-
         checkCollisions(this);
 
         const alive = this.bikes.filter(b => b.alive);
+        
         if (alive.length <= 1) {
             this.gameOver = true;
-            this.statusMessage = this.player.alive
-                ? "Ти переміг! 🎉 (R)"
-                : "Ти програв 😢 (R)";
+
+            if (this.mode === "duel") {
+                if (this.player.alive && !this.player2.alive)
+                    this.statusMessage = "Гравець 1 переміг! (R)";
+                else if (this.player2.alive && !this.player.alive)
+                    this.statusMessage = "Гравець 2 переміг! (R)";
+                else
+                    this.statusMessage = "Нічия! (R)";
+            } else {
+                this.statusMessage = this.player.alive
+                    ? "Ти переміг! 🎉 (R)"
+                    : "Ти програв 😢 (R)";
+            }
         }
     }
 }
