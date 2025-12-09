@@ -10,6 +10,7 @@ import {
     BIKE_BODY_RADIUS
 } from './config.js';
 import { dist2 } from './util.js';
+import { randomObstacles } from "./obstacles.js";
 
 const COLLISION_RADIUS2 = COLLISION_RADIUS * COLLISION_RADIUS;
 const BIKE_BODY_RADIUS2 = BIKE_BODY_RADIUS * BIKE_BODY_RADIUS;
@@ -28,14 +29,12 @@ function getSpawnPositions(count) {
     const radius = WORLD_SIZE / 4;
     const positions = [];
     const step = (Math.PI * 2) / count;
-
     for (let i = 0; i < count; i++) {
         const ang = i * step;
         const x = Math.cos(ang) * radius;
         const y = Math.sin(ang) * radius;
         positions.push({ x, y });
     }
-
     return positions;
 }
 
@@ -46,6 +45,7 @@ export default class World {
         this.gameOver = false;
         this.winner = null;
         this.bonuses = [];
+        this.obstacles = [];
         this._bonusSpawnTimer = BONUS_SPAWN_INTERVAL;
         this.statusMessage = '';
     }
@@ -53,6 +53,7 @@ export default class World {
     init() {
         this.bikes = [];
         this.bonuses = [];
+        this.obstacles = randomObstacles();
         this.gameOver = false;
         this.winner = null;
         this._bonusSpawnTimer = BONUS_SPAWN_INTERVAL;
@@ -73,6 +74,25 @@ export default class World {
             bot.resetTrail();
             this.bikes.push(bot);
         }
+
+        const S = WORLD_SIZE / 2;
+
+        this.obstacles.push({
+            type: "wall",
+            points: [ {x: -S, y: -S}, {x:  S, y: -S} ]
+        });
+        this.obstacles.push({
+            type: "wall",
+            points: [ {x:  S, y: -S}, {x:  S, y:  S} ]
+        });
+        this.obstacles.push({
+            type: "wall",
+            points: [ {x:  S, y:  S}, {x: -S, y:  S} ]
+        });
+        this.obstacles.push({
+            type: "wall",
+            points: [ {x: -S, y:  S}, {x: -S, y: -S} ]
+        });
 
         this.statusMessage = 'Гра йде...';
     }
@@ -131,9 +151,8 @@ export default class World {
             for (const other of this.bikes) {
                 const trail = other.trail;
                 for (let i = 0; i < trail.length; i++) {
-                    const p = trail[i];
                     if (other === bike && i > trail.length - 10) continue;
-                    if (dist2(bike, p) < COLLISION_RADIUS2) {
+                    if (dist2(bike, trail[i]) < COLLISION_RADIUS2) {
                         bike.alive = false;
                         break;
                     }
@@ -157,15 +176,53 @@ export default class World {
 
         for (const bike of this.bikes) {
             if (!bike.alive) continue;
+
+            for (const ob of this.obstacles) {
+                if (ob.type === "wall") {
+                    if (lineCollide(bike, ob.points[0], ob.points[1])) bike.alive = false;
+                }
+                else if (ob.type === "poly") {
+                    if (polyHit(bike, ob.points)) bike.alive = false;
+                }
+                else if (ob.type === "shape_with_hole") {
+                    if (polyHit(bike, ob.outer)) bike.alive = false;
+                }
+                if (!bike.alive) break;
+            }
+        }
+
+        for (const bike of this.bikes) {
+            if (!bike.alive) continue;
             for (const bonus of this.bonuses) {
                 if (!bonus.alive) continue;
                 if (dist2(bike, bonus) < COLLISION_RADIUS2 * 4) {
-                    this.applyBonus(bike, bonus);
                     bonus.alive = false;
                 }
             }
         }
     }
+}
 
-    applyBonus(bike, bonus) {}
+function lineCollide(b, a, c) {
+    return pointSegmentDist2(b.x, b.y, a, c) < 160;
+}
+
+function polyHit(b, pts) {
+    for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        const c = pts[(i + 1) % pts.length];
+        if (pointSegmentDist2(b.x, b.y, a, c) < 160) return true;
+    }
+    return false;
+}
+
+function pointSegmentDist2(px, py, a, c) {
+    const vx = c.x - a.x;
+    const vy = c.y - a.y;
+    const ux = px - a.x;
+    const uy = py - a.y;
+    const t = Math.max(0, Math.min(1, (ux*vx + uy*vy)/(vx*vx + vy*vy)));
+    const dx = a.x + vx*t - px;
+    const dy = a.y + vy*t - py;
+    return dx*dx + dy*dy;
 }

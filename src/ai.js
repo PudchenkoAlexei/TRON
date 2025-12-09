@@ -6,6 +6,7 @@ function norm(a) {
 
 function checkStaticCollision(x, y, world, self) {
     const trailR2 = (COLLISION_RADIUS * 2.3) ** 2;
+
     for (const b of world.bikes) {
         const t = b.trail;
         const len = t.length;
@@ -16,6 +17,7 @@ function checkStaticCollision(x, y, world, self) {
             if (dx * dx + dy * dy < trailR2) return true;
         }
     }
+
     const bodyR2 = (BIKE_BODY_RADIUS * 1.6) ** 2;
     for (const b of world.bikes) {
         if (!b.alive || b === self) continue;
@@ -23,6 +25,20 @@ function checkStaticCollision(x, y, world, self) {
         const dy = y - b.y;
         if (dx * dx + dy * dy < bodyR2) return true;
     }
+
+    for (const ob of world.obstacles) {
+        if (ob.type === "wall") {
+            if (pointSegmentDist2(x, y, ob.points[0], ob.points[1]) < 260)
+                return true;
+        }
+        else if (ob.type === "poly") {
+            if (polylineCollision(x, y, ob.points)) return true;
+        }
+        else if (ob.type === "shape_with_hole") {
+            if (polylineCollision(x, y, ob.outer)) return true;
+        }
+    }
+
     return false;
 }
 
@@ -52,6 +68,7 @@ function nearestObstacleDist2(bike, world) {
             if (d2 < best) best = d2;
         }
     }
+
     for (const b of world.bikes) {
         if (!b.alive || b === bike) continue;
         const dx = bike.x - b.x;
@@ -59,18 +76,33 @@ function nearestObstacleDist2(bike, world) {
         const d2 = dx * dx + dy * dy;
         if (d2 < best) best = d2;
     }
+
+    for (const ob of world.obstacles) {
+        if (ob.type === "wall") {
+            best = Math.min(best, pointSegmentDist2(bike.x, bike.y, ob.points[0], ob.points[1]));
+        }
+        else if (ob.type === "poly") {
+            best = Math.min(best, polyMinDist2(bike, ob.points));
+        }
+        else if (ob.type === "shape_with_hole") {
+            best = Math.min(best, polyMinDist2(bike, ob.outer));
+        }
+    }
+
     return best;
 }
 
 function separationPenalty(bike, world, ang) {
     let penalty = 0;
     const sepR2 = BIKE_SEPARATION_RADIUS * BIKE_SEPARATION_RADIUS;
+
     for (const other of world.bikes) {
         if (!other.alive || other === bike) continue;
         const dx = other.x - bike.x;
         const dy = other.y - bike.y;
         const d2 = dx * dx + dy * dy;
         if (d2 > sepR2) continue;
+
         const dirToOther = Math.atan2(dy, dx);
         const diff = Math.abs(norm(ang - dirToOther));
         const w = (sepR2 - d2) / sepR2;
@@ -142,4 +174,33 @@ export function updateBotAI(bike, world, dt) {
 
     if (diff > 0.05) bike.angle += turnSpeed * dt;
     else if (diff < -0.05) bike.angle -= turnSpeed * dt;
+}
+
+function pointSegmentDist2(px, py, a, c) {
+    const vx = c.x - a.x;
+    const vy = c.y - a.y;
+    const ux = px - a.x;
+    const uy = py - a.y;
+    const t = Math.max(0, Math.min(1, (ux*vx + uy*vy)/(vx*vx + vy*vy)));
+    const dx = a.x + vx*t - px;
+    const dy = a.y + vy*t - py;
+    return dx*dx + dy*dy;
+}
+
+function polylineCollision(x, y, pts) {
+    for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        const c = pts[(i+1) % pts.length];
+        if (pointSegmentDist2(x, y, a, c) < 260) return true;
+    }
+    return false;
+}
+
+function polyMinDist2(bike, pts) {
+    let best = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], c = pts[(i+1)%pts.length];
+        best = Math.min(best, pointSegmentDist2(bike.x, bike.y, a, c));
+    }
+    return best;
 }
