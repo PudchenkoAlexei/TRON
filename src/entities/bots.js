@@ -1,4 +1,9 @@
-import { COLLISION_RADIUS, BIKE_BODY_RADIUS, BIKE_SEPARATION_RADIUS } from "../core/config.js";
+import {
+    COLLISION_RADIUS,
+    BIKE_BODY_RADIUS,
+    BIKE_SEPARATION_RADIUS,
+    BIKE_SPEED
+} from "../core/config.js";
 import { pointSegmentDist2 } from "../utils/math.js";
 
 function norm(a) {
@@ -114,6 +119,42 @@ function separationPenalty(bike, world, ang) {
     return penalty;
 }
 
+function predictPlayerPosition(player, t) {
+    const speed = BIKE_SPEED * (player.speedMultiplier || 1);
+    const dx = Math.cos(player.angle) * speed * t;
+    const dy = Math.sin(player.angle) * speed * t;
+    return { x: player.x + dx, y: player.y + dy };
+}
+
+function findTargetBonus(bike, world) {
+    let best = null;
+    let bestD2 = Infinity;
+
+    for (const bonus of world.bonuses) {
+        if (!bonus.alive) continue;
+
+        const dx = bonus.x - bike.x;
+        const dy = bonus.y - bike.y;
+        const d2 = dx * dx + dy * dy;
+
+        if (d2 > 900 * 900) continue;
+
+        if (d2 < bestD2) {
+            bestD2 = d2;
+            best = bonus;
+        }
+    }
+
+    return { bonus: best, dist2: bestD2 };
+}
+
+function corridorPenalty(depth) {
+    if (depth >= 260) return 0;
+    if (depth <= 80) return 120;
+    const k = (260 - depth) / (260 - 80);
+    return k * 80;
+}
+
 export function updateBotAI(bike, world, dt) {
     const p = world.player;
     if (!p || !p.alive || !bike.alive) return;
@@ -121,22 +162,33 @@ export function updateBotAI(bike, world, dt) {
     const dx = p.x - bike.x;
     const dy = p.y - bike.y;
     const distP2 = dx * dx + dy * dy;
+    const distP = Math.sqrt(distP2);
 
-    const targetAng = Math.atan2(dy, dx);
+    const tHorizon = Math.min(Math.max(distP / 400, 0.25), 1.1);
+    const pred = predictPlayerPosition(p, tHorizon);
+    const targetAngPred = Math.atan2(pred.y - bike.y, pred.x - bike.x);
+
     const travelAng = bike.angle;
 
     const obsD2 = nearestObstacleDist2(bike, world);
     const danger = obsD2 < 200 * 200;
     const panic = obsD2 < 120 * 120;
 
-    const scans = 51;
+    const { bonus: targetBonus, dist2: distBonus2 } = findTargetBonus(bike, world);
+    let bonusAng = null;
+    if (targetBonus) {
+        bonusAng = Math.atan2(targetBonus.y - bike.y, targetBonus.x - bike.x);
+    }
+
+    const scans = 49;
     const halfSector = Math.PI * 1.0;
     const step = (halfSector * 2) / (scans - 1);
 
-    let bestScore = -999999;
+    let bestScore = -Infinity;
     let bestAng = bike.angle;
 
-    const centers = [targetAng, travelAng];
+    const centers = [targetAngPred, travelAng];
+    if (bonusAng !== null) centers.push(bonusAng);
 
     for (const center of centers) {
         for (let i = 0; i < scans; i++) {
@@ -150,21 +202,41 @@ export function updateBotAI(bike, world, dt) {
             const safeW = panic ? 5.0 : danger ? 3.0 : 2.0;
             score += depth * safeW;
 
-            const diffToPlayer = Math.abs(norm(ang - targetAng));
-            const attackBase =
-                distP2 > 900 * 900 ? 170 :
-                distP2 > 600 * 600 ? 140 :
-                distP2 > 400 * 400 ? 115 : 100;
+            score -= corridorPenalty(depth);
 
-            const attackW = panic ? attackBase * 0.3 : danger ? attackBase * 0.55 : attackBase;
-            score += (Math.PI - diffToPlayer) * attackW;
+            const diffToPlayerPred = Math.abs(norm(ang - targetAngPred));
+            const attackBase =
+                distP2 > 900 * 900 ? 180 :
+                distP2 > 600 * 600 ? 150 :
+                distP2 > 400 * 400 ? 120 : 95;
+
+            const attackW = panic
+                ? attackBase * 0.30
+                : danger
+                    ? attackBase * 0.55
+                    : attackBase;
+
+            score += (Math.PI - diffToPlayerPred) * attackW;
+
+            if (bonusAng !== null && !panic) {
+                const diffToBonus = Math.abs(norm(ang - bonusAng));
+                if (distBonus2 < 700 * 700) {
+                    const bonusBase =
+                        distBonus2 < 300 * 300 ? 150 :
+                        distBonus2 < 500 * 500 ? 110 :
+                        80;
+                    const bonusW = danger ? bonusBase * 0.5 : bonusBase;
+                    score += (Math.PI - diffToBonus) * bonusW;
+                }
+            }
 
             const diffTurn = Math.abs(norm(ang - bike.angle));
-            const turnPenalty = panic ? 12 : 22;
+            const turnPenalty = panic ? 10 : 20;
             score -= diffTurn * turnPenalty;
 
-            const sepPen = separationPenalty(bike, world, ang);
-            score -= sepPen;
+            score -= separationPenalty(bike, world, ang);
+
+            score += Math.random() * 8;
 
             if (score > bestScore) {
                 bestScore = score;
@@ -174,7 +246,7 @@ export function updateBotAI(bike, world, dt) {
     }
 
     const diff = norm(bestAng - bike.angle);
-    const turnSpeed = panic ? Math.PI * 2.3 : danger ? Math.PI * 1.9 : Math.PI * 1.5;
+    const turnSpeed = panic ? Math.PI * 2.4 : danger ? Math.PI * 1.9 : Math.PI * 1.5;
 
     if (diff > 0.05) bike.angle += turnSpeed * dt;
     else if (diff < -0.05) bike.angle -= turnSpeed * dt;
