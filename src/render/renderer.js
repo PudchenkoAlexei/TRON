@@ -6,20 +6,42 @@ export function renderWorld(world, ctx, canvas) {
     const h = canvas.height;
 
     ctx.clearRect(0, 0, w, h);
-
     if (!world.player) return;
 
-    const camX = world.player.x;
-    const camY = world.player.y;
+    // -----------------------------
+    // CAMERA LOGIC
+    // -----------------------------
+
+    let camX, camY, scale = 1;
+
+    if (world.mode === "duel") {
+        // 🔥 Режим 1 на 1 — показати всю карту
+        camX = 0;
+        camY = 0;
+
+        // Визначаємо масштаб, щоб WORLD_SIZE повністю вмістився
+        const scaleX = w / WORLD_SIZE;
+        const scaleY = h / WORLD_SIZE;
+        scale = Math.min(scaleX, scaleY) * 0.95;  // невелике поле навколо
+    } 
+    else {
+        // 🔥 Нормальний режим — слідуємо за гравцем
+        camX = world.player.x;
+        camY = world.player.y;
+        scale = 1;
+    }
 
     ctx.save();
     ctx.translate(w / 2, h / 2);
+    ctx.scale(scale, scale);
 
+    // Фон
     ctx.fillStyle = "#020205";
     ctx.fillRect(-w, -h, w * 2, h * 2);
 
+    // GRID
     ctx.strokeStyle = "#0d1a2a";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 / scale;
     ctx.shadowColor = "#0a537d";
     ctx.shadowBlur = 3;
 
@@ -41,12 +63,15 @@ export function renderWorld(world, ctx, canvas) {
 
     drawObstacles(world, ctx, camX, camY);
 
-    for (const b of world.bikes) drawTrail(ctx, b, camX, camY);
+    for (const b of world.bikes)
+        drawTrail(ctx, b, camX, camY);
 
     drawBonuses(world, ctx, camX, camY);
+
     drawExplosions(world, ctx, camX, camY);
 
-    for (const b of world.bikes) drawBike(ctx, b, camX, camY);
+    for (const b of world.bikes)
+        drawBike(ctx, b, camX, camY);
 
     ctx.restore();
 }

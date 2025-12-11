@@ -5,6 +5,8 @@ const inputState = {
 
     p2_left: false,
     p2_right: false,
+
+    exitToMenuPressed: false,
 };
 
 export function initInput() {
@@ -16,6 +18,8 @@ export function initInput() {
 
         if (e.code === "KeyA") inputState.p2_left = true;
         if (e.code === "KeyD") inputState.p2_right = true;
+
+        if (e.code === "Escape") inputState.exitToMenuPressed = true;
     });
 
     window.addEventListener("keyup", e => {
@@ -30,6 +34,12 @@ export function initInput() {
 export function consumeRestart() {
     const pressed = inputState.restartPressed;
     inputState.restartPressed = false;
+    return pressed;
+}
+
+export function consumeExitToMenu() {
+    const pressed = inputState.exitToMenuPressed;
+    inputState.exitToMenuPressed = false;
     return pressed;
 }
 

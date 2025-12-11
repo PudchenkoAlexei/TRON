@@ -113,10 +113,17 @@ export default class World {
             }
         }
 
+        if (this.mode === "normal") {
+            if (this.player && !this.player.alive) {
+                this.gameOver = true;
+                this.statusMessage = "Ти програв 😢";
+                return;
+            }
+        }
+
         updateBonuses(this, dt);
         checkCollisions(this);
 
-        // Додаємо вибухи
         for (const b of this.bikes) {
             if (!b.alive && !b.exploded) {
                 b.exploded = true;
@@ -128,7 +135,7 @@ export default class World {
         this.explosions = this.explosions.filter(e => e.alive);
 
         const alive = this.bikes.filter(b => b.alive);
-        
+
         if (alive.length <= 1) {
             this.gameOver = true;
 

@@ -13,7 +13,6 @@
             overflow: hidden;
         }
 
-
         #menu {
             position: absolute;
             inset: 0;
@@ -74,7 +73,6 @@
             box-shadow: 0 0 25px #00cfff, 0 0 45px #00aaff;
         }
 
-
         #ui {
             position: absolute;
             left: 10px;
@@ -105,7 +103,24 @@
         <div>← / → — гравець 1</div>
         <div>A / D — гравець 2</div>
         <div>R — перезапуск</div>
+        <div>ESC — головне меню</div>
         <div id="status"></div>
+    </div>
+
+    <div id="gameover" style="
+        position:absolute; inset:0;
+        display:none;
+        justify-content:center;
+        align-items:center;
+        flex-direction:column;
+        background:rgba(0,0,0,0.75);
+        z-index:30;
+        text-align:center;">
+        
+        <h1 id="goText" style="font-size:64px; text-shadow:0 0 20px #0ff;"></h1>
+
+        <button id="retryBtn" style="margin:20px; font-size:24px;">Зіграти ще раз</button>
+        <button id="menuBtn" style="font-size:24px;">Головне меню</button>
     </div>
 
     <canvas id="game"></canvas>
