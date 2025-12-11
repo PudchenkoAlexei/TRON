@@ -54,12 +54,15 @@ export default class Bike {
         if (this.trail.length === 0) {
             this.trail.push({ x: this.x, y: this.y });
             this._trailDistAcc = 0;
-        } else if (this._trailDistAcc >= TRAIL_STEP / this.trailMultiplier) {
+        } 
+        else if (this._trailDistAcc >= TRAIL_STEP) {
             this.trail.push({ x: this.x, y: this.y });
             this._trailDistAcc = 0;
 
-            if (this.trail.length > TRAIL_MAX_POINTS * this.trailMultiplier)
+            const maxLen = TRAIL_MAX_POINTS * this.trailMultiplier;
+            if (this.trail.length > maxLen) {
                 this.trail.shift();
+            }
         }
     }
 }

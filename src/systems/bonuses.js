@@ -1,4 +1,4 @@
-import { WORLD_SIZE } from "../core/config.js";
+import { WORLD_SIZE, TRAIL_MAX_POINTS } from "../core/config.js";
 
 const BONUS_RADIUS = 18;
 const BONUS_EFFECT_TIME = 5;
@@ -18,9 +18,6 @@ function randomPos() {
     };
 }
 
-// -----------------------------
-//  Точна перевірка: точка всередині полігону
-// -----------------------------
 function pointInPoly(px, py, pts) {
     let inside = false;
 
@@ -37,9 +34,6 @@ function pointInPoly(px, py, pts) {
     return inside;
 }
 
-// -----------------------------
-//  Точна перевірка перешкоди
-// -----------------------------
 function insideObstacle(x, y, ob) {
     if (ob.type === "wall") {
         const a = ob.points[0], c = ob.points[1];
@@ -52,16 +46,13 @@ function insideObstacle(x, y, ob) {
     }
 
     if (ob.type === "poly") {
-        if (pointInPoly(x, y, ob.points)) return true;
-        return false;
+        return pointInPoly(x, y, ob.points);
     }
 
     if (ob.type === "shape_with_hole") {
         const inOuter = pointInPoly(x, y, ob.outer);
         const inInner = pointInPoly(x, y, ob.inner);
-
-        if (inOuter && !inInner) return true;  // всередині фігури — погано
-        return false;
+        return inOuter && !inInner;
     }
 
     return false;
@@ -73,9 +64,6 @@ function posFree(world, pos) {
     return true;
 }
 
-// -----------------------------
-//  Генерація бонусу
-// -----------------------------
 function makeBonus(type, world) {
     let pos = {x: 0, y: 0};
 
@@ -92,9 +80,6 @@ function makeBonus(type, world) {
     };
 }
 
-// -----------------------------
-//  Оновлення бонусів
-// -----------------------------
 export function updateBonuses(world, dt) {
     for (const bike of world.bikes) {
         if (!bike.alive) continue;
@@ -116,9 +101,7 @@ export function updateBonuses(world, dt) {
 
 function activateBonus(bike, type) {
     if (!bike.activeBonuses) bike.activeBonuses = {};
-
     bike.activeBonuses[type] = BONUS_EFFECT_TIME;
-
     recalcStats(bike);
 }
 
@@ -131,19 +114,36 @@ function updateTimers(bikes, dt) {
             if (b.activeBonuses[key] <= 0) delete b.activeBonuses[key];
         }
 
+        if (Object.keys(b.activeBonuses).length === 0) {
+            b.activeBonuses = null;
+        }
+
         recalcStats(b);
     }
 }
 
 function recalcStats(bike) {
+    const oldMultiplier = bike.trailMultiplier;
+
     bike.speedMultiplier = 1;
     bike.trailMultiplier = 1;
 
-    if (!bike.activeBonuses) return;
+    if (!bike.activeBonuses) {
+        if (bike.trail.length > TRAIL_MAX_POINTS) {
+            bike.trail = bike.trail.slice(-TRAIL_MAX_POINTS);
+        }
+        return;
+    }
 
     if (bike.activeBonuses.speed > 0)
         bike.speedMultiplier = 2;
 
     if (bike.activeBonuses.long_trail > 0)
         bike.trailMultiplier = 2;
+
+    if (oldMultiplier !== bike.trailMultiplier && bike.trailMultiplier === 1) {
+        if (bike.trail.length > TRAIL_MAX_POINTS) {
+            bike.trail = bike.trail.slice(-TRAIL_MAX_POINTS);
+        }
+    }
 }
